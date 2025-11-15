@@ -12,48 +12,12 @@ document.getElementById('canvas-container').appendChild(renderer.domElement);
 // Create the globe
 const globeGeometry = new THREE.SphereGeometry(2, 64, 64);
 
-// Create a simple earth-like texture using a gradient
-const canvas = document.createElement('canvas');
-canvas.width = 2048;
-canvas.height = 1024;
-const ctx = canvas.getContext('2d');
+// Load real Earth texture
+const textureLoader = new THREE.TextureLoader();
+const earthTexture = textureLoader.load('/textures/earth.jpg');
 
-// Create a blue and green earth-like texture
-const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-gradient.addColorStop(0, '#1e3a8a');    // Dark blue
-gradient.addColorStop(0.3, '#3b82f6');  // Blue (ocean)
-gradient.addColorStop(0.5, '#22c55e');  // Green (land)
-gradient.addColorStop(0.7, '#3b82f6');  // Blue (ocean)
-gradient.addColorStop(1, '#1e3a8a');    // Dark blue
-
-ctx.fillStyle = gradient;
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-// Add some random landmass-like patterns
-ctx.fillStyle = '#22c55e';
-for (let i = 0; i < 100; i++) {
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-    const radius = Math.random() * 100 + 50;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-// Add darker green for variation
-ctx.fillStyle = '#16a34a';
-for (let i = 0; i < 50; i++) {
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-    const radius = Math.random() * 60 + 30;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-const texture = new THREE.CanvasTexture(canvas);
 const globeMaterial = new THREE.MeshPhongMaterial({
-    map: texture,
+    map: earthTexture,
     bumpScale: 0.05,
     specular: new THREE.Color('#333333'),
     shininess: 5
@@ -84,6 +48,10 @@ scene.add(directionalLight);
 // Camera position
 camera.position.z = 5;
 
+// Zoom limits
+const minZoom = 3;
+const maxZoom = 10;
+
 // Mouse interaction for rotation
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
@@ -101,13 +69,30 @@ renderer.domElement.addEventListener('mousemove', (e) => {
         const deltaX = e.clientX - previousMousePosition.x;
         const deltaY = e.clientY - previousMousePosition.y;
         
-        rotationVelocity.x = deltaY * 0.005;
-        rotationVelocity.y = deltaX * 0.005;
+        // Improved rotation using camera-relative coordinates
+        const rotationSpeed = 0.005;
         
-        globe.rotation.y += rotationVelocity.y;
-        globe.rotation.x += rotationVelocity.x;
-        atmosphere.rotation.y += rotationVelocity.y;
-        atmosphere.rotation.x += rotationVelocity.x;
+        // Create rotation quaternions for each axis
+        const quaternionY = new THREE.Quaternion();
+        quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaX * rotationSpeed);
+        
+        // Get the camera's right vector for horizontal rotation
+        const cameraRight = new THREE.Vector3(1, 0, 0);
+        cameraRight.applyQuaternion(camera.quaternion);
+        
+        const quaternionX = new THREE.Quaternion();
+        quaternionX.setFromAxisAngle(cameraRight, deltaY * rotationSpeed);
+        
+        // Apply rotations
+        globe.quaternion.multiplyQuaternions(quaternionY, globe.quaternion);
+        globe.quaternion.multiplyQuaternions(quaternionX, globe.quaternion);
+        atmosphere.quaternion.copy(globe.quaternion);
+        
+        // Store velocity for inertia
+        rotationVelocity.x = deltaY * rotationSpeed;
+        rotationVelocity.y = deltaX * rotationSpeed;
+        rotationVelocity.quaternionX = quaternionX.clone();
+        rotationVelocity.quaternionY = quaternionY.clone();
         
         previousMousePosition = { x: e.clientX, y: e.clientY };
     }
@@ -135,13 +120,30 @@ renderer.domElement.addEventListener('touchmove', (e) => {
         const deltaX = touch.clientX - previousMousePosition.x;
         const deltaY = touch.clientY - previousMousePosition.y;
         
-        rotationVelocity.x = deltaY * 0.005;
-        rotationVelocity.y = deltaX * 0.005;
+        // Improved rotation using camera-relative coordinates
+        const rotationSpeed = 0.005;
         
-        globe.rotation.y += rotationVelocity.y;
-        globe.rotation.x += rotationVelocity.x;
-        atmosphere.rotation.y += rotationVelocity.y;
-        atmosphere.rotation.x += rotationVelocity.x;
+        // Create rotation quaternions for each axis
+        const quaternionY = new THREE.Quaternion();
+        quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaX * rotationSpeed);
+        
+        // Get the camera's right vector for horizontal rotation
+        const cameraRight = new THREE.Vector3(1, 0, 0);
+        cameraRight.applyQuaternion(camera.quaternion);
+        
+        const quaternionX = new THREE.Quaternion();
+        quaternionX.setFromAxisAngle(cameraRight, deltaY * rotationSpeed);
+        
+        // Apply rotations
+        globe.quaternion.multiplyQuaternions(quaternionY, globe.quaternion);
+        globe.quaternion.multiplyQuaternions(quaternionX, globe.quaternion);
+        atmosphere.quaternion.copy(globe.quaternion);
+        
+        // Store velocity for inertia
+        rotationVelocity.x = deltaY * rotationSpeed;
+        rotationVelocity.y = deltaX * rotationSpeed;
+        rotationVelocity.quaternionX = quaternionX.clone();
+        rotationVelocity.quaternionY = quaternionY.clone();
         
         previousMousePosition = { x: touch.clientX, y: touch.clientY };
     }
@@ -149,6 +151,16 @@ renderer.domElement.addEventListener('touchmove', (e) => {
 
 renderer.domElement.addEventListener('touchend', () => {
     isDragging = false;
+});
+
+// Zoom functionality with mouse wheel
+renderer.domElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomSpeed = 0.002;
+    const delta = e.deltaY * zoomSpeed;
+    
+    camera.position.z += delta;
+    camera.position.z = Math.max(minZoom, Math.min(maxZoom, camera.position.z));
 });
 
 // Handle window resize
@@ -164,14 +176,25 @@ function animate() {
     
     // Apply inertia when not dragging
     if (!isDragging) {
-        globe.rotation.y += rotationVelocity.y;
-        globe.rotation.x += rotationVelocity.x;
-        atmosphere.rotation.y += rotationVelocity.y;
-        atmosphere.rotation.x += rotationVelocity.x;
-        
-        // Apply damping
-        rotationVelocity.x *= damping;
-        rotationVelocity.y *= damping;
+        if (rotationVelocity.quaternionX && rotationVelocity.quaternionY) {
+            // Apply quaternion-based inertia
+            globe.quaternion.multiplyQuaternions(rotationVelocity.quaternionY, globe.quaternion);
+            globe.quaternion.multiplyQuaternions(rotationVelocity.quaternionX, globe.quaternion);
+            atmosphere.quaternion.copy(globe.quaternion);
+            
+            // Apply damping to quaternions
+            const dampedX = rotationVelocity.x * damping;
+            const dampedY = rotationVelocity.y * damping;
+            
+            const cameraRight = new THREE.Vector3(1, 0, 0);
+            cameraRight.applyQuaternion(camera.quaternion);
+            
+            rotationVelocity.quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), dampedY);
+            rotationVelocity.quaternionX.setFromAxisAngle(cameraRight, dampedX);
+            
+            rotationVelocity.x = dampedX;
+            rotationVelocity.y = dampedY;
+        }
     }
     
     renderer.render(scene, camera);
