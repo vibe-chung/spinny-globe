@@ -81,7 +81,7 @@ renderer.domElement.addEventListener('mousemove', (e) => {
         cameraRight.applyQuaternion(camera.quaternion);
         
         const quaternionX = new THREE.Quaternion();
-        quaternionX.setFromAxisAngle(cameraRight, -deltaY * rotationSpeed);
+        quaternionX.setFromAxisAngle(cameraRight, deltaY * rotationSpeed);
         
         // Apply rotations
         globe.quaternion.multiplyQuaternions(quaternionY, globe.quaternion);
@@ -132,7 +132,7 @@ renderer.domElement.addEventListener('touchmove', (e) => {
         cameraRight.applyQuaternion(camera.quaternion);
         
         const quaternionX = new THREE.Quaternion();
-        quaternionX.setFromAxisAngle(cameraRight, -deltaY * rotationSpeed);
+        quaternionX.setFromAxisAngle(cameraRight, deltaY * rotationSpeed);
         
         // Apply rotations
         globe.quaternion.multiplyQuaternions(quaternionY, globe.quaternion);
@@ -190,7 +190,7 @@ function animate() {
             cameraRight.applyQuaternion(camera.quaternion);
             
             rotationVelocity.quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), dampedY);
-            rotationVelocity.quaternionX.setFromAxisAngle(cameraRight, -dampedX);
+            rotationVelocity.quaternionX.setFromAxisAngle(cameraRight, dampedX);
             
             rotationVelocity.x = dampedX;
             rotationVelocity.y = dampedY;
