@@ -4,11 +4,12 @@ A beautiful, interactive 3D globe of Earth built with Three.js. Drag to spin the
 
 ## Features
 
-- 🎨 Realistic 3D globe with procedurally generated Earth texture
-- 🖱️ Interactive drag-to-rotate controls
+- 🌍 Real Earth texture map from public domain sources
+- 🖱️ Interactive drag-to-rotate controls with fixed rotation behavior
+- 🔍 Zoom in/out with mouse wheel
 - 📱 Touch support for mobile devices
 - ✨ Atmospheric glow effect
-- ⚡ Smooth inertia and momentum
+- ⚡ Smooth inertia and momentum using quaternion-based rotation
 - 📐 Responsive design
 
 ## Getting Started
@@ -53,13 +54,12 @@ npm run preview
 
 ## Usage
 
-Simply drag the globe with your mouse or finger to rotate it. The globe will continue spinning with momentum when you release.
+Simply drag the globe with your mouse or finger to rotate it. The globe will continue spinning with momentum when you release. Use your mouse wheel or trackpad to zoom in and out.
 
 ## Future Enhancements
 
 - Custom labels pinned to specific coordinates
 - Emoji markers for points of interest
-- Real Earth texture maps
 - More interactive features
 
 ## Technology Stack
