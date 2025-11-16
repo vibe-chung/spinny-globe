@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spinny Globe</title>
     <style>
         * {
@@ -23,6 +23,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            touch-action: none;
         }
         
         #info {
@@ -49,7 +50,7 @@
 <body>
     <div id="info">
         <h1>🌍 Spinny Globe</h1>
-        <p>Drag to rotate • Scroll to zoom</p>
+        <p>Drag to rotate • Scroll/Pinch to zoom</p>
     </div>
     <div id="canvas-container"></div>
     <script type="module" src="/main.js"></script>

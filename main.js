@@ -107,15 +107,31 @@ renderer.domElement.addEventListener('mouseleave', () => {
 });
 
 // Touch events for mobile
+let initialPinchDistance = null;
+let initialCameraZ = null;
+
 renderer.domElement.addEventListener('touchstart', (e) => {
-    isDragging = true;
-    const touch = e.touches[0];
-    previousMousePosition = { x: touch.clientX, y: touch.clientY };
-    rotationVelocity = { x: 0, y: 0 };
-});
+    e.preventDefault(); // Prevent page scrolling
+    
+    if (e.touches.length === 1) {
+        isDragging = true;
+        const touch = e.touches[0];
+        previousMousePosition = { x: touch.clientX, y: touch.clientY };
+        rotationVelocity = { x: 0, y: 0 };
+    } else if (e.touches.length === 2) {
+        // Pinch to zoom
+        isDragging = false;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+        initialCameraZ = camera.position.z;
+    }
+}, { passive: false });
 
 renderer.domElement.addEventListener('touchmove', (e) => {
-    if (isDragging) {
+    e.preventDefault(); // Prevent page scrolling
+    
+    if (e.touches.length === 1 && isDragging) {
         const touch = e.touches[0];
         const deltaX = touch.clientX - previousMousePosition.x;
         const deltaY = touch.clientY - previousMousePosition.y;
@@ -146,12 +162,26 @@ renderer.domElement.addEventListener('touchmove', (e) => {
         rotationVelocity.quaternionY = quaternionY.clone();
         
         previousMousePosition = { x: touch.clientX, y: touch.clientY };
+    } else if (e.touches.length === 2) {
+        // Handle pinch to zoom
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (initialPinchDistance !== null) {
+            const scale = initialPinchDistance / distance;
+            const newZ = initialCameraZ * scale;
+            camera.position.z = Math.max(minZoom, Math.min(maxZoom, newZ));
+        }
     }
-});
+}, { passive: false });
 
-renderer.domElement.addEventListener('touchend', () => {
+renderer.domElement.addEventListener('touchend', (e) => {
+    e.preventDefault(); // Prevent page scrolling
     isDragging = false;
-});
+    initialPinchDistance = null;
+    initialCameraZ = null;
+}, { passive: false });
 
 // Zoom functionality with mouse wheel
 renderer.domElement.addEventListener('wheel', (e) => {
